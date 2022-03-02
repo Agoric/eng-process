@@ -1,0 +1,34 @@
+github_orgs:
+                        - Agoric
+                        - agoric-labs
+                        - endojs
+
+github_primary_repo:    "Agoric/agoric-sdk"
+
+# Can't get the forked repos via the GH /search/repositories REST API.
+# Can get them from the /orgs/${ORG}/repos REST API, but that is not supported by the python module.
+github_forked_repos:
+    205480594:          "agoric-labs/cosmos-sdk"
+
+team_labels:
+    wallet&dapps:       "wallet,agoric-cli,dapp%20%26%20ui%20support,oracle,solo"
+    cosmic swingset:    "agoric-cosmos,cosmic-swingset,agd"
+    run proto:          "governance,amm,core%20economy,run-protocol,zoe%20contract,getrun,wallet,token%20economy,staking,ui,pegasus"
+    kernel:             "swingset,metering,installation-bundling,stores"
+    zoe&ertp:           "zoe,ertp"
+    endo:               "endo,xsnap,tc39,ses,marshal"
+    general:            "tools,telemetry"
+
+# The primary team for each developers
+person_to_team:
+    warner:             kernel
+    kriskowal:          endo
+    michaelfig:         wallet
+    Chris-Hibbert:      "run proto"
+    samsiegart:         "run proto"
+    turadg:             "run proto"
+    FUDCo:              kernel
+    dckc:               "cosmic swingset"
+    JimLarson:          "cosmic swingset"
+    mhofman:            kernel
+    gibson042:          "cosmic swingset"

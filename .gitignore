@@ -1,0 +1,11 @@
+# Logs
+*.log
+
+# Python stuff
+*.pyc
+
+# Other misc stuff
+*.out
+
+# PyCharm config
+.idea
