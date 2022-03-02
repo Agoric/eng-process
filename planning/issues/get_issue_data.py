@@ -9,6 +9,24 @@ from zenhub import Zenhub
 
 # Get the data from ZenHub and GitHub to generate the reports we need for
 # our project planning, that we can't get natively from either platform.
+#
+# The docs for the ZenHub REST API can be found here: https://github.com/ZenHubIO/API
+# You can test the ZenHUB REST API directly with curl like this:
+#     curl -H 'Content-Type: application/json' -H 'X-Authentication-Token:AUTHTOKEN' \
+#       https://api.zenhub.com/p1/repositories/219012610/reports/releases
+
+# The docs for the GitHub REST API can be found here: https://docs.github.com/en/rest
+# You can test the GitHub REST API directly with curl like this:
+#     curl -H "Accept: application/vnd.github.v3+json" -u USERNAME:AUTHTOKEN \
+#       'https://api.github.com/repos/Agoric/agoric-sdk/issues/4188'
+#
+# This tool uses the Python module pyzenhub which is documented here: https://pypi.org/project/pyzenhub/
+# You can install it by running 'pip3 install pyzenhub'.  This code was written against version 0.2.1.
+# The pyzenhub module does not have detailed per-method documentation, so the comments by our usages
+# of the module will only include links to the relevant REST API docs.
+#
+# This tool uses the Python module PyGithub which is documented here: https://pygithub.readthedocs.io/en/latest/
+# You can install it by running 'pip3 install PyGithub'.  This code was written against version 1.55
 class GetData:
     def __init__(self):
         self.labels_to_teams = dict()
@@ -35,6 +53,7 @@ class GetData:
                     self.labels_to_teams[label] = [team]
 
     def get_zh_release_id(self, release_name):
+        # See https://github.com/ZenHubIO/API#get-release-reports-for-a-repository
         for release in self.zh.get_release_reports(self.repo_full_names_to_ids[self.config['github_primary_repo']]):
             if release['title'] == release_name:
                 return release['release_id']
@@ -44,6 +63,7 @@ class GetData:
         return self.repo_ids_to_full_names[repo_id] + '/' + str(issue_id)
 
     def get_zh_blockages(self, repo_id):
+        # See https://github.com/ZenHubIO/API#get-dependencies-for-a-repository
         result = self.zh.get_dependencies(repo_id)
         for dep in result['dependencies']:
             self.rel_writer.writerow([self.form_fqn(dep['blocking']['repo_id'], dep['blocking']['issue_number']),
@@ -52,6 +72,8 @@ class GetData:
 
     def get_gh_repos_for_orgs(self):
         for org in self.config['github_orgs']:
+            # See: https://pygithub.readthedocs.io/en/latest/github.html#github.MainClass.Github.search_repositories
+            # and: https://docs.github.com/en/rest/reference/search#search-repositories
             for repo in self.gh.search_repositories(query=f'org:{org}'):
                 self.repo_ids_to_full_names[repo.id] = repo.full_name
                 self.repo_full_names_to_ids[repo.full_name] = repo.id
@@ -64,10 +86,13 @@ class GetData:
     def get_gh_repo(self, repo_fqn):
         repo = self.gh_repos.get(repo_fqn, None)
         if not repo:
+            # See: https://pygithub.readthedocs.io/en/latest/github.html#github.MainClass.Github.get_repo
+            # and https://docs.github.com/en/rest/reference/repos#get-a-repository
             repo = self.gh_repos[repo_fqn] = self.gh.get_repo(repo_fqn)
         return repo
 
     def get_epic_data(self, repo_id, issue_mumber):
+        # See: https://github.com/ZenHubIO/API#get-epic-data
         epic_data = self.zh.get_epic_data(repo_id, issue_mumber)
         for issue in epic_data['issues']:
             self.epic_sub_issues.append([self.form_fqn(repo_id, issue_mumber), 'epic',
@@ -98,6 +123,8 @@ class GetData:
         assignee = assignee[0]
         owning_teams = self.get_owning_teams_for_issue(assignee, issue_labels)
 
+        # Story points are a ZH concept, not native to GH, so we have to get the issue from ZH, too.
+        # See https://github.com/ZenHubIO/API#get-issue-data
         zh_issue = self.zh.get_issue_data(repo_id, issue_number)
         issue_estimate = zh_issue['estimate']['value'] if 'estimate' in zh_issue else '',
         issue_estimate = issue_estimate[0]
@@ -133,12 +160,12 @@ class GetData:
                                        'created_at closed_at url title'.split(' '))
 
             self.rel_writer.writerow('from rel to'.split(' '))
+            # See: https://github.com/ZenHubIO/API#get-all-the-issues-for-a-release-report
             for count, report_issue in enumerate(self.zh.get_release_report_issues(release_id)):
                 self.process_issue(report_issue['repo_id'], report_issue['issue_number'])
                 time.sleep(1)  # The ZH Rest API is rate limited to 100 requests / minute
                 if count and count % 10 == 0:
                     print(count)
-                    # break
 
             # Only write Epic sub-issues for issues that are in this release.
             for sub_issue in self.epic_sub_issues:
