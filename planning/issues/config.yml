@@ -12,12 +12,12 @@ github_forked_repos:
 
 team_labels:
     wallet&dapps:       "wallet,agoric-cli,dapp%20%26%20ui%20support,oracle,solo"
-    cosmic swingset:    "agoric-cosmos,cosmic-swingset,agd"
-    run proto:          "governance,amm,core%20economy,run-protocol,zoe%20contract,getrun,wallet,token%20economy,staking,ui,pegasus"
+    cosmic swingset:    "agoric-cosmos,cosmic-swingset,agd,rosetta"
+    run proto:          "governance,amm,core%20economy,run-protocol,zoe%20contract,getrun,wallet,token%20economy,staking,ui,pegasus,vaults"
     kernel:             "swingset,metering,installation-bundling,stores"
     zoe&ertp:           "zoe,ertp"
     endo:               "endo,xsnap,tc39,ses,marshal"
-    general:            "tools,telemetry"
+    general:            "tooling,telemetry"
 
 # The primary team for each developers
 person_to_team:
@@ -32,3 +32,5 @@ person_to_team:
     JimLarson:          "cosmic swingset"
     mhofman:            kernel
     gibson042:          "cosmic swingset"
+
+default_issue_estimate: 2.4
