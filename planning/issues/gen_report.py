@@ -14,6 +14,7 @@ from datetime import date, datetime
 #   * Issues with no team (inferred from issue labels)
 #   * Velocity by assignee based on closed issues since beginning of release cycle.
 #   * Calculation of how many actual days of work each engineer has in order to complete the release work.
+# Also, generate a CSV of all issues, by assignee.
 class GenReport:
     def __init__(self):
         self.default_issue_story_points = None
@@ -74,6 +75,15 @@ class GenReport:
             for issue in sorted(self.issues_by_assignee[key],
                                 key=lambda i: int(i['estimate']) if i['estimate'] != '' else 0, reverse=True):
                 print(f"    {issue['estimate']} {issue['teams']} {issue['url']} {issue['title']}")
+
+    def write_issues_by_assignee_csv(self):
+        with open('assignee_report.csv', 'w') as report:
+            report_writer = csv.writer(report, quotechar='"')
+            report_writer.writerow('assignee estimate team url description')
+            for key, value in sorted(self.estimates_by_assignee.items(), key=lambda item: item[1], reverse=True):
+                for issue in sorted(self.issues_by_assignee[key],
+                                    key=lambda i: int(i['estimate']) if i['estimate'] != '' else 0, reverse=True):
+                    report_writer.writerow([key, issue['estimate'], issue['teams'], issue['url'], issue['title']])
 
     def display_velocity_report(self):
         start_date = datetime.strptime(sys.argv[2], '%Y-%m-%d').date()
@@ -147,6 +157,8 @@ class GenReport:
         GenReport.display_dict("Issues with no estimate, by assignee", self.unestimated_by_assignee)
 
         self.display_issues_by_assignee('Story points per assignee')
+
+        self.write_issues_by_assignee_csv()
 
         self.display_issues('Issues with no assignee', self.issues_with_no_assignee,
                             'teams pipeline url title'.split(' '), 'teams')

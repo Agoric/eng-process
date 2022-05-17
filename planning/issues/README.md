@@ -1,0 +1,94 @@
+# Agoric Issue Planning Tools
+
+Agoric uses GitHub for issue tracking, and use ZenHub on top of GitHub for its
+additional concepts (Epics, Releases) and tooling (Release burn down charts, agile board).
+
+## Tools
+
+Includeded in this directory are the following tools:
+
+### get_issue_data.py
+
+This tool, for a particular ZenHub release, gets the combined issue data from GitHub and Zenhub.  
+
+It produces two CSV files as output.  
+* The first has the following columns: 
+repo, issue, assignee, estimate, pipeline, labels, teams, created_at, closed_at, url, title.
+* The second CSV file captures the Epic and Blocker relationships between the issues in the release.
+This second file has the following columns: from,rel,to
+
+### gen_report.py
+
+This tool takes the two CSV files produced by `get_issue_data.py` and generates a text file that contains
+the following information about the issues in the release:
+
+* Open issues count
+* Open story points
+* Story points by assignee
+* Number of issues without story points, by assignee
+* List of all issues assigned to each engineer, ordered by story points
+* Issues with no assignees
+* Issues with no story points
+* Issues with no team (inferred from issue labels)
+* Velocity by assignee based on closed issues since beginning of release cycle.
+* Calculation of how many actual days of work each engineer has in order to complete the release work.
+
+You can see a sample of this report
+[here](https://gist.githubusercontent.com/Tartuffo/1925cbc90c73542531bf01760c102e9d/raw/116795cf42de4083571b766b0f32b1ec7b5d40c0/mn1-issue-report.txt).
+
+It also generates a CSV of all issues, by assignee.
+
+### viz_issues.py
+
+This tool takes the two CSV files produced by `get_issue_data.py` and generates a [Graphviz](https://graphviz.org/)
+file that it then renders into SVG.
+
+The visualization graph shows the issues clustered by Engineering team, and visually highlights Epics as sub-clusters
+with their sub-issues. For each issue, the following data is displayed: show title of issue, the assignee, and the
+number of estimated story points.  Blockers are also indicated in the graph.
+
+You can see a sample of this visualization
+[here](https://gist.githubusercontent.com/Tartuffo/fabdda772117d2251bfe1a5ad9b9433a/raw/6969d28a14a2ff8a7730f17f1114aaaba41f60f8/mn1-vis.dot.svg).
+
+### sync-milestone.py
+
+We use ZenHub Releases to do our project planning. These Releases are a ZenHub only implementation - GitHub
+has no direct linked concept, although GitHub does support the concept of Milestones. (Note that ZenHub used to
+integrate with GitHub Milestones, but they removed that linkage and the concept of Milestones from ZenHub.)
+
+To provide community visibility into the issues that are in our major releases, we wrote this tool to sync our ZenHub
+Releases to GitHub milestones.
+
+## Dependencies
+
+The Python tools in this directory are written with Python 3.  These Python scripts use the ZenHUB and and GitHub 
+modules described below.
+
+### pyzenhub for ZenHub access
+
+This tool uses the Python module pyzenhub which is documented here: https://pypi.org/project/pyzenhub/.
+
+You can install it by running `pip3 install pyzenhub`.  This code was written against version 0.2.1.
+The pyzenhub module does not have detailed per-method documentation, so the comments by our usages
+of the module will only include links to the relevant RESTful API docs.
+
+The pyzenhub module uses the ZenHub RESTful API can be found here: https://github.com/ZenHubIO/API.
+
+You can test the ZenHUB RESTful API directly with curl like this:
+```
+curl -H 'Content-Type: application/json' -H 'X-Authentication-Token:AUTHTOKEN' \
+https://api.zenhub.com/p1/repositories/219012610/reports/releases
+```
+
+### PyGithub for GitHub access
+
+
+This tool uses the Python module PyGithub which is documented here: https://pygithub.readthedocs.io/en/latest/
+You can install it by running `pip3 install PyGithub`.  This code was written against version 1.55
+
+The docs for the GitHub RESTful API can be found here: https://docs.github.com/en/rest
+You can test the GitHub RESTful API directly with curl like this:
+```
+curl -H "Accept: application/vnd.github.v3+json" -u USERNAME:AUTHTOKEN \
+'https://api.github.com/repos/Agoric/agoric-sdk/issues/4188'
+```

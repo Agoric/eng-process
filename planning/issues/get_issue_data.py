@@ -9,24 +9,6 @@ from zenhub import Zenhub
 
 # Get the data from ZenHub and GitHub to generate the reports we need for
 # our project planning, that we can't get natively from either platform.
-#
-# The docs for the ZenHub REST API can be found here: https://github.com/ZenHubIO/API
-# You can test the ZenHUB REST API directly with curl like this:
-#     curl -H 'Content-Type: application/json' -H 'X-Authentication-Token:AUTHTOKEN' \
-#       https://api.zenhub.com/p1/repositories/219012610/reports/releases
-
-# The docs for the GitHub REST API can be found here: https://docs.github.com/en/rest
-# You can test the GitHub REST API directly with curl like this:
-#     curl -H "Accept: application/vnd.github.v3+json" -u USERNAME:AUTHTOKEN \
-#       'https://api.github.com/repos/Agoric/agoric-sdk/issues/4188'
-#
-# This tool uses the Python module pyzenhub which is documented here: https://pypi.org/project/pyzenhub/
-# You can install it by running 'pip3 install pyzenhub'.  This code was written against version 0.2.1.
-# The pyzenhub module does not have detailed per-method documentation, so the comments by our usages
-# of the module will only include links to the relevant REST API docs.
-#
-# This tool uses the Python module PyGithub which is documented here: https://pygithub.readthedocs.io/en/latest/
-# You can install it by running 'pip3 install PyGithub'.  This code was written against version 1.55
 class GetData:
     def __init__(self):
         self.labels_to_teams = dict()
@@ -73,7 +55,6 @@ class GetData:
     def get_gh_repos_for_orgs(self):
         for org in self.config['github_orgs']:
             # See: https://pygithub.readthedocs.io/en/latest/github.html#github.MainClass.Github.search_repositories
-            # and: https://docs.github.com/en/rest/reference/search#search-repositories
             for repo in self.gh.search_repositories(query=f'org:{org}'):
                 self.repo_ids_to_full_names[repo.id] = repo.full_name
                 self.repo_full_names_to_ids[repo.full_name] = repo.id
@@ -87,7 +68,6 @@ class GetData:
         repo = self.gh_repos.get(repo_fqn, None)
         if not repo:
             # See: https://pygithub.readthedocs.io/en/latest/github.html#github.MainClass.Github.get_repo
-            # and https://docs.github.com/en/rest/reference/repos#get-a-repository
             repo = self.gh_repos[repo_fqn] = self.gh.get_repo(repo_fqn)
         return repo
 
@@ -117,6 +97,7 @@ class GetData:
             self.get_zh_blockages(repo_id)
         repo_fqn = self.repo_ids_to_full_names[repo_id]
         gh_repo = self.get_gh_repo(repo_fqn)
+        # See https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_issue
         gh_issue = gh_repo.get_issue(int(issue_number))
         issue_labels = [issue_label.name.lower() for issue_label in gh_issue.labels]
         assignee = gh_issue.assignee.login if gh_issue.assignee else '',
