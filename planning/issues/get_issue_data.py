@@ -42,7 +42,8 @@ class GetData:
         return None
 
     def form_fqn(self, repo_id, issue_id):
-        return self.repo_ids_to_full_names[repo_id] + '/' + str(issue_id)
+        return self.repo_ids_to_full_names[repo_id] + '/' + str(issue_id) \
+            if repo_id in self.repo_ids_to_full_names else None
 
     def get_zh_blockages(self, repo_id):
         # See https://github.com/ZenHubIO/API#get-dependencies-for-a-repository
@@ -92,7 +93,12 @@ class GetData:
         return owning_teams
 
     def process_issue(self, repo_id, issue_number):
-        self.issues_seen.add(self.form_fqn(repo_id, issue_number))
+        fqn = self.form_fqn(repo_id, issue_number)
+        if fqn:
+            self.issues_seen.add(self.form_fqn(repo_id, issue_number))
+        else:
+            print(f'Repo not loaded: {repo_id}, add new github_orgs or github_forked_repos entry in config file.')
+            return
         if repo_id not in self.gh_repos:
             self.get_zh_blockages(repo_id)
         repo_fqn = self.repo_ids_to_full_names[repo_id]
