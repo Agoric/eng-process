@@ -74,7 +74,11 @@ class GenReport:
             print(f'{value:3d} {key}')
             for issue in sorted(self.issues_by_assignee[key],
                                 key=lambda i: int(i['estimate']) if i['estimate'] != '' else 0, reverse=True):
-                print(f"    {issue['estimate']} {issue['teams']} {issue['url']} {issue['title']}")
+                print(f"    {issue['estimate']} {issue['teams']} {issue['url']} {issue['title']}", end='')
+                if issue['pipeline'] in ('In Progress', 'Up Next'):
+                    print(f" [{issue['pipeline']}]")
+                else:
+                    print('')
 
     def write_issues_by_assignee_csv(self):
         with open('assignee_report.csv', 'w') as report:

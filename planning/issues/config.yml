@@ -9,11 +9,12 @@ github_primary_repo:    "Agoric/agoric-sdk"
 # Can get them from the /orgs/${ORG}/repos REST API, but that is not supported by the python module.
 github_forked_repos:
     205480594:          "agoric-labs/cosmos-sdk"
+    243620709:          "agoric-labs/tendermint"
 
 team_labels:
     wallet&dapps:       "wallet,agoric-cli,dapp%20%26%20ui%20support,oracle,solo"
     cosmic swingset:    "agoric-cosmos,cosmic-swingset,agd,rosetta"
-    run proto:          "governance,amm,core%20economy,run-protocol,zoe%20contract,getrun,wallet,token%20economy,staking,ui,pegasus,vaults"
+    inter proto:          "governance,amm,core%20economy,inter-protocol,zoe%20contract,getrun,token%20economy,staking,ui,pegasus,vaults"
     kernel:             "swingset,metering,installation-bundling,stores"
     zoe&ertp:           "zoe,ertp"
     endo:               "endo,xsnap,tc39,ses,marshal"
@@ -24,9 +25,9 @@ person_to_team:
     warner:             kernel
     kriskowal:          endo
     michaelfig:         wallet
-    Chris-Hibbert:      "run proto"
-    samsiegart:         "run proto"
-    turadg:             "run proto"
+    Chris-Hibbert:      "inter proto"
+    samsiegart:         "inter proto"
+    turadg:             "inter proto"
     FUDCo:              kernel
     dckc:               "cosmic swingset"
     JimLarson:          "cosmic swingset"
