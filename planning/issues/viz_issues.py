@@ -137,7 +137,9 @@ def main():
                 output.write(f'      label="";\n')
                 cluster_num += 1
                 for sub_issue in issues_by_epic[epic_fqn]:
-                    write_issue_node(sub_issue, output, 6)
+                    # Don't emit an Epic sub issue of this Epic, it'll be in its own cluster.
+                    if sub_issue['fqn'] == epic_fqn or 'epic' not in sub_issue['labels']:
+                        write_issue_node(sub_issue, output, 6)
 
                 output.write(f'    }}\n')
 
@@ -152,8 +154,7 @@ def main():
             if from_issue and to_issue:
                 from_node = issue_fqn_to_node_id(from_issue['fqn'], False)
                 to_node = issue_fqn_to_node_id(to_issue['fqn'], False)
-          #      if from_node and to_node:
-                if from_issue['teams'] != to_issue['teams']:
+                if from_node and to_node:
                     output.write(f'  n_{to_node} -> n_{from_node};\n')
 
         for blocker in blockers.values():

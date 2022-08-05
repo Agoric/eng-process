@@ -81,15 +81,17 @@ class GetData:
         return epic_data['total_epic_estimates']['value']
 
     def get_owning_teams_for_issue(self, assignee, issue_labels):
-        owning_teams: Set[str] = set()
+        owning_teams = []
+        # Associate the issue with teams, based on matching labels to teams in config file.
         for issue_label in issue_labels:
             team = self.labels_to_teams.get(issue_label, None)
-            if team:
-                owning_teams.update(team)
-        if len(owning_teams) > 1 and assignee:
+            if team and team not in owning_teams:
+                owning_teams.append(team[0])
+        # If there is no label that matches a team, then default to the assignee's team, if any.
+        if not owning_teams and assignee:
             assignee_team = self.config['person_to_team'].get(assignee, None)
-            if assignee_team and assignee_team in owning_teams:
-                return {assignee_team}
+            if assignee_team:
+                owning_teams.append(assignee_team)
         return owning_teams
 
     def process_issue(self, repo_id, issue_number):
@@ -99,9 +101,9 @@ class GetData:
         else:
             print(f'Repo not loaded: {repo_id}, add new github_orgs or github_forked_repos entry in config file.')
             return
-        if repo_id not in self.gh_repos:
-            self.get_zh_blockages(repo_id)
         repo_fqn = self.repo_ids_to_full_names[repo_id]
+        if repo_fqn not in self.gh_repos:
+            self.get_zh_blockages(repo_id)
         gh_repo = self.get_gh_repo(repo_fqn)
         # See https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_issue
         gh_issue = gh_repo.get_issue(int(issue_number))
