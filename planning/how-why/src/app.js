@@ -34,6 +34,46 @@ const APIKey = (apiKey, setKey) => () => {
   </form>`;
 };
 
+const Agoric = {
+  repositories: {
+    ["agoric-sdk"]: 219012610,
+  },
+  workspaceId: "Z2lkOi8vcmFwdG9yL1plbmh1YlVzZXIvNjM0NDE4",
+};
+
+const issueQuery = `
+query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
+  issueByInfo(repositoryGhId: $repositoryGhId, issueNumber: $issueNumber) {
+    state
+    number
+    title
+    repository {
+      ghId
+      ownerName
+      name
+    }
+    blockedIssues {
+      nodes {
+        number
+        title
+      }
+    }
+    blockingIssues {
+      nodes {
+        number
+        title
+      }
+    }
+    body
+    labels(first: 10) {
+      nodes {
+        name
+        color
+      }
+    }
+  }
+}`;
+
 const reposQuery = `
 {
   viewer {
@@ -54,6 +94,64 @@ const reposQuery = `
 `;
 
 const Error = (error) => html`<p><strong>${error.message}</strong></p> `;
+
+const Issue = (key, setKey, result) => () => {
+  console.log("Issue", { key, result });
+
+  const onInput = (ev) => {
+    const issueNumber = parseInt(ev.target.value, 10);
+    setKey({ ...key, issueNumber });
+  };
+  const numControl = html`<label
+      >Number:
+      <input type="number" value="${key.issueNumber}" onBlur=${onInput}
+    /></label>
+    <em>TODO: show repo</em>`;
+
+  const detail = () => {
+    if (!result.data) {
+      return html``;
+    }
+
+    const {
+      data: {
+        issueByInfo: {
+          repository: { ownerName, name },
+          number,
+          state,
+          title,
+          labels: { nodes: labels },
+          body,
+          blockedIssues: { nodes: blockedIssues },
+          blockingIssues: { nodes: blockingIssues },
+        },
+      },
+    } = result;
+    const url = `https://github.com/${ownerName}/${name}/issues/${number}`;
+    return html`<h3><a href="${url}">#${number}</a> ${title}: ${state}</h3>
+      <p>
+        ${labels.map(({ name, color }) => html`<b class="label">${name}</b> `)}
+      </p>
+      <p>
+        <b>blocking: </b>
+        ${blockedIssues.map(
+          ({ number, title }) => html`<a title=${title}>#${number}</a> `
+        )}
+      </p>
+      <p>
+        <b>blocked by: </b>
+        ${blockingIssues.map(
+          ({ number, title }) => html`<a title=${title}>#${number}</a> `
+        )}
+      </p>
+      <small>${body}</small> `;
+  };
+
+  return html`<h2>Issue: TODO</h2>
+    ${numControl}
+    <br />
+    ${detail()}`;
+};
 
 const Repositories = (result) => () => {
   if (!result.data) {
@@ -95,20 +193,26 @@ const App =
   ({ localStorage, fetch }) =>
   () => {
     const [apiKey, setKey] = useState(localStorage.getItem(key));
-    const [repositories, setRepositories] = useState({});
     const [reason, setReason] = useState(null);
+    const [repositories, setRepositories] = useState({});
+    const [issueKey, setIssueKey] = useState({
+      repositoryGhId: Agoric.repositories["agoric-sdk"],
+      issueNumber: 1,
+    });
+    const [issueDetail, setIssueDetail] = useState({});
 
     useEffect(() => {
       const endpoint = graphql(ZenHub.endpoint, apiKey, { fetch });
+
       const runQuery = async () => {
         setRepositories({});
         setReason(null);
 
         endpoint
           .query(reposQuery)
-          .then((data) => {
-            console.log("query result:", data);
-            setRepositories(data);
+          .then((result) => {
+            console.log("query result:", result);
+            setRepositories(result);
           })
           .catch((r) => {
             setReason(r);
@@ -117,12 +221,37 @@ const App =
       runQuery();
     }, [apiKey]);
 
-    console.log({ reason });
+    useEffect(() => {
+      const endpoint = graphql(ZenHub.endpoint, apiKey, { fetch });
+
+      const runQuery = async () => {
+        setReason(null);
+
+        endpoint
+          .query(issueQuery, {
+            workspaceId: Agoric.workspaceId,
+            ...issueKey,
+          })
+          .then((result) => {
+            console.log("issue query result:", result);
+            setIssueDetail(result);
+          })
+          .catch((r) => {
+            setReason(r);
+          });
+      };
+      runQuery();
+    }, [apiKey, issueKey]);
+
+    console.log("App state", { reason, issueKey });
     return html`
       <div>
         ${reason
           ? html`<${Error(reason)}`
-          : html`<${Repositories(repositories)} />`}
+          : html`<div>
+              <${Issue(issueKey, setIssueKey, issueDetail)} />
+              <${Repositories(repositories)} />
+            </div> `}
         <${APIKey(apiKey, setKey)} />
       </div>
     `;
