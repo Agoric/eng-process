@@ -1,15 +1,42 @@
 <!DOCTYPE html>
 <head>
   <title>How/Why Viz for Agoric Issues</title>
+  <style>
+    /* the input type number does not support size attribute
+    ack: Felix 2014 https://stackoverflow.com/a/22709877/7963 */
+    input[type="number"][size="5"] {
+      width: 6em;
+    }
+    input[type="number"][size="6"] {
+      width: 7em;
+    }
+  </style>
   <script type="module" src="app.js"></script>
+  <script src="//d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+  <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 </head>
 <body>
   <section id="ui">
     <noscript>Try turning on JavaScript?</noscript>
   </section>
+  <div id="graph" style="text-align: left"></div>
+  <script>
+    globalThis.renderDot = (dot) =>
+      d3.select("#graph").graphviz().renderDot(dot);
+    renderDot("digraph  {a -> b}");
+  </script>
   <section>
-    <h2>References</h2>
+    <h2>Powered By</h2>
     <ul>
+      <li>
+        <a href="https://graphviz.org/">Graphviz</a>
+      </li>
+      <li>
+        <a href="https://www.npmjs.com/package/d3-graphviz"
+          >d3-graphviz - npm</a
+        >
+      </li>
       <li>
         <a href="https://developers.zenhub.com/graphql-api-docs/getting-started"
           >Getting Started | Zenhub Developers</a

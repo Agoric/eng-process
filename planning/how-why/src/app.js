@@ -29,7 +29,6 @@ const APIKey = (apiKey, setKey) => () => {
         <input type="password" value=${apiKey} onInput=${onInput} />
       </label>
       <button type="button" onClick=${onSubmit}>Save</button>
-      <p><em>TODO: support apiKey in URL hash</em></p>
     </fieldset>
   </form>`;
 };
@@ -95,69 +94,44 @@ const reposQuery = `
 
 const Error = (error) => html`<p><strong>${error.message}</strong></p> `;
 
-const Issue = (key, setKey, result) => () => {
-  console.log("Issue", { key, result });
+const issueDepDot = (result) => {
+  const {
+    data: { issueByInfo },
+  } = result;
+  const {
+    repository: { ownerName, name },
+    number,
+    state,
+    title,
+    labels: { nodes: labels },
+    body,
+    blockedIssues: { nodes: blockedIssues },
+    blockingIssues: { nodes: blockingIssues },
+  } = issueByInfo;
 
-  const onInput = (ev) => {
-    const issueNumber = parseInt(ev.target.value, 10);
-    setKey({ ...key, issueNumber });
-  };
-  const numControl = html`<label
-      >Number:
-      <input type="number" value="${key.issueNumber}" onBlur=${onInput}
-    /></label>
-    <em>TODO: show repo</em>`;
-
-  const detail = () => {
-    if (!result.data) {
-      return html``;
-    }
-
-    const {
-      data: {
-        issueByInfo: {
-          repository: { ownerName, name },
-          number,
-          state,
-          title,
-          labels: { nodes: labels },
-          body,
-          blockedIssues: { nodes: blockedIssues },
-          blockingIssues: { nodes: blockingIssues },
-        },
-      },
-    } = result;
-    const url = `https://github.com/${ownerName}/${name}/issues/${number}`;
-    return html`<h3><a href="${url}">#${number}</a> ${title}: ${state}</h3>
-      <p>
-        ${labels.map(({ name, color }) => html`<b class="label">${name}</b> `)}
-      </p>
-      <p>
-        <b>blocking: </b>
-        ${blockedIssues.map(
-          ({ number, title }) => html`<a title=${title}>#${number}</a> `
-        )}
-      </p>
-      <p>
-        <b>blocked by: </b>
-        ${blockingIssues.map(
-          ({ number, title }) => html`<a title=${title}>#${number}</a> `
-        )}
-      </p>
-      <small>${body}</small> `;
-  };
-
-  return html`<h2>Issue: TODO</h2>
-    ${numControl}
-    <br />
-    ${detail()}`;
+  const issues = [issueByInfo, ...blockedIssues, ...blockingIssues];
+  const deps = [
+    ...blockedIssues.map((hd) => [number, hd.number]),
+    ...blockingIssues.map((tl) => [tl.number, number]),
+  ];
+  const node = ({ number, title }) =>
+    ` issue${number} [label="#${number}", tooltip=${JSON.stringify(title)}]`;
+  const edge = ([tl, hd]) => `  issue${tl} -> issue${hd}`;
+  return `
+  digraph {
+    ${issues.map(node).join("\n")}
+    ${deps.map(edge).join("\n")}
+  }`;
 };
 
-const Repositories = (result) => () => {
-  if (!result.data) {
+const repoUrl = ({ ownerName, name }) =>
+  `https://github.com/${ownerName}/${name}`;
+
+const repositorySelection = (repositories, issueKey) => {
+  if (!repositories.data) {
     return html``;
   }
-  // console.log("Repositores", { result });
+
   const {
     data: {
       viewer: {
@@ -170,18 +144,69 @@ const Repositories = (result) => () => {
         },
       },
     },
-  } = result;
+  } = repositories;
 
-  const repoUrl = ({ ownerName, name }) =>
-    `https://github.com/${ownerName}/${name}`;
+  console.warn("TODO: make repo selectable");
+  return html`<select disabled>
+    ${nodes.map(
+      (r) =>
+        html`<option
+          ...${r.ghId === issueKey.repositoryGhId ? { selected: true } : {}}
+          value=${r.ghId}
+        >
+          ${r.ownerName}/${r.name}
+        </option>`
+    )}
+  </select>`;
+};
 
-  return html` <h2>Repositories</h2>
-    <ul>
-      ${nodes.map(
-        (r) =>
-          html`<li title=${r.ghId}><a href="${repoUrl(r)}">${r.name}</a></li>`
-      )}
-    </ul>`;
+const Issue = (issueKey, setIssueKey, issueDetail, repositories) => () => {
+  if (!issueDetail.data) {
+    return html`<em>no issueDetail available yet</em>`;
+  }
+
+  const onSubmit = (ev) => {
+    const issueNumber = parseInt(ev.target.querySelector("input").value, 10);
+    setIssueKey({ ...issueKey, issueNumber });
+    ev.preventDefault();
+  };
+
+  const repoControl = repositorySelection(repositories, issueKey);
+
+  const numControl = html`<label
+    >#<input size="5" type="number" value="${issueKey.issueNumber}"
+  /></label>`;
+
+  const {
+    data: {
+      issueByInfo: {
+        repository: { ownerName, name },
+        number,
+        state,
+        title,
+        labels: { nodes: labels },
+        body,
+        blockedIssues: { nodes: blockedIssues },
+        blockingIssues: { nodes: blockingIssues },
+      },
+    },
+  } = issueDetail;
+  const url = `https://github.com/${ownerName}/${name}/issues/${number}`;
+
+  return html`<h2>Issue Dependencies</h2>
+    <form onSubmit=${onSubmit}>
+      <fieldset>
+        ${repoControl} ${numControl}${" "}
+        <a href="${url}">#${number} ${title}</a>: ${state}
+        <p>
+          Labels:
+          ${labels.map(
+            ({ name, color }) => html`<b class="label">${name}</b> `
+          )}
+        </p>
+      </fieldset>
+    </form>`;
+  //  <small>${body}</small>
 };
 
 const ZenHub = {
@@ -192,6 +217,9 @@ const ZenHub = {
 const App =
   ({ localStorage, fetch }) =>
   () => {
+    if (window.location.hash) {
+      console.warn("TODO: support apiKey in URL hash");
+    }
     const [apiKey, setKey] = useState(localStorage.getItem(key));
     const [reason, setReason] = useState(null);
     const [repositories, setRepositories] = useState({});
@@ -235,6 +263,9 @@ const App =
           .then((result) => {
             console.log("issue query result:", result);
             setIssueDetail(result);
+            const dot = issueDepDot(result);
+            console.log(dot);
+            globalThis.renderDot(dot);
           })
           .catch((r) => {
             setReason(r);
@@ -243,16 +274,15 @@ const App =
       runQuery();
     }, [apiKey, issueKey]);
 
-    console.log("App state", { reason, issueKey });
+    console.log("App state", { reason, issueKey, repositories });
     return html`
       <div>
+        <${APIKey(apiKey, setKey)} />
         ${reason
           ? html`<${Error(reason)}`
           : html`<div>
-              <${Issue(issueKey, setIssueKey, issueDetail)} />
-              <${Repositories(repositories)} />
+              <${Issue(issueKey, setIssueKey, issueDetail, repositories)} />
             </div> `}
-        <${APIKey(apiKey, setKey)} />
       </div>
     `;
   };
