@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "start": "yarn parcel ./src/index.html"
+  },
+  "devDependencies": {
+    "parcel": "^2.7.0"
+  },
+  "dependencies": {
+    "htm": "^3.1.1",
+    "preact": "^10.10.1"
+  }
+}
