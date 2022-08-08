@@ -174,13 +174,12 @@ export const issueDepDot = (issueDetail) => {
       repository: { ownerName, name },
       number,
       blockedIssues: { nodes: blockedIssues },
-      blockingIssues: { nodes: blockingIssues },
+      // blockingIssues: { nodes: blockingIssues },
       epic,
     } = issueByInfo;
 
-    const issues = [issueByInfo, ...blockedIssues, ...blockingIssues];
+    const issues = [issueByInfo, ...blockedIssues];
     const deps = [
-      ...blockedIssues.map((hd) => ({ tail: number, head: hd.number })),
       ...blockedIssues.map((hd) => ({ tail: number, head: hd.number })),
       ...(epic?.childIssues?.nodes || []).map((tl) => ({
         tail: tl.number,
