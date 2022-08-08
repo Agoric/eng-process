@@ -41,6 +41,7 @@ export const issueUrl = ({ repository: { ownerName, name }, number }) =>
  * @typedef {IssueLeaf & {
  *  blockedIssues: { nodes: IssueLeaf[] },
  *  blockingIssues: { nodes: IssueLeaf[] },
+ *  epic: { childIssues: { nodes: IssueLeaf[] }},
  *  body: string,
  *  labels: { nodes: { name: string, color: string}[] },
  * }} IssueInfo
@@ -94,6 +95,20 @@ query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
       ownerName
       name
     }
+    epic {
+      childIssues {
+        nodes {
+          number
+          state
+          title
+          repository {
+            ghId
+            ownerName
+            name
+          }
+        }
+      }
+    }
     blockedIssues {
       nodes {
         number
@@ -126,7 +141,8 @@ query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
       }
     }
   }
-}`,
+}
+`,
 };
 
 /**
@@ -159,12 +175,17 @@ export const issueDepDot = (issueDetail) => {
       number,
       blockedIssues: { nodes: blockedIssues },
       blockingIssues: { nodes: blockingIssues },
+      epic,
     } = issueByInfo;
 
     const issues = [issueByInfo, ...blockedIssues, ...blockingIssues];
     const deps = [
       ...blockedIssues.map((hd) => ({ tail: number, head: hd.number })),
-      ...blockingIssues.map((tl) => ({ tail: tl.number, head: number })),
+      ...blockedIssues.map((hd) => ({ tail: number, head: hd.number })),
+      ...(epic?.childIssues?.nodes || []).map((tl) => ({
+        tail: tl.number,
+        head: number,
+      })),
     ];
     return [...issues.map(node), ...deps.map(edge)];
   };
@@ -197,7 +218,7 @@ export const deepDependencies = async (workspaceId, issueKeys, endpoint) => {
         issueNumber: current.number,
       })
       .then((result) => {
-        console.log("issue query result:", result);
+        console.log("issue", current.number, result);
         if ("data" in result) {
           /** @type {{data: {issueByInfo: IssueInfo}}} */
           const {
@@ -207,6 +228,7 @@ export const deepDependencies = async (workspaceId, issueKeys, endpoint) => {
           updated.set(issueUrl(issueByInfo), issueByInfo);
           // issueByInfo.blockedIssues.nodes.forEach((i) => todo.add(i));
           issueByInfo.blockingIssues.nodes.forEach((i) => todo.add(i));
+          issueByInfo.epic?.childIssues?.nodes.forEach((i) => todo.add(i));
         } else {
           console.warn("TODO: handle query failures?", result);
         }
