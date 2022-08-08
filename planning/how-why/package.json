@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "build": "yarn parcel build ./src/index.html",
     "start": "yarn parcel ./src/index.html"
   },
   "devDependencies": {
