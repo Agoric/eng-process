@@ -15,6 +15,20 @@ export const issueUrl = ({ repository: { ownerName, name }, number }) =>
 
 /**
  * @typedef {{
+ *   releases: { nodes: {
+ *     id: string,
+ *     endOn: string,
+ *     title: string,
+ *     issues: { nodes: IssueKey[] }
+ *   }[]}
+ *   repositoriesConnection: { nodes: {
+ *     ghId: number,
+ *     ownerName: string,
+ *     name: string,
+ *   }[]}
+ * }} WorkspaceInfo
+ *
+ * @typedef {{
  *   repository: {
  *     ownerName: string,
  *     name: string,
@@ -31,7 +45,45 @@ export const issueUrl = ({ repository: { ownerName, name }, number }) =>
  *  labels: { nodes: { name: string, color: string}[] },
  * }} IssueInfo
  */
-export const issueQuery = `
+
+/**
+ * authoring tool: https://developers.zenhub.com/explorer
+ */
+const queries = {
+  workspace: `
+query workspaceReleases($id: ID!) {
+  workspace(id: $id) {
+    name
+    defaultRepository {
+      ghId
+      ownerName
+      name
+    }
+    releases(state: {eq: OPEN}) {
+      nodes {
+        id
+        state
+        endOn
+        title
+        issues {
+          totalCount
+          nodes {
+            repository { ghId ownerName name }
+            number
+          }
+        }
+      }
+    }
+    repositoriesConnection {
+      nodes {
+        ownerName
+        name
+        ghId
+      }
+    }
+  }
+}`,
+  issue: `
 query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
   issueByInfo(repositoryGhId: $repositoryGhId, issueNumber: $issueNumber) {
     state
@@ -74,26 +126,20 @@ query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
       }
     }
   }
-}`;
+}`,
+};
 
-export const reposQuery = `
-{
-  viewer {
-    searchWorkspaces(query: "Agoric Primary Workspace") {
-      nodes {
-        name
-        repositoriesConnection {
-          nodes {
-            ownerName
-            name
-            ghId
-          }
-        }
-      }
-    }
+/**
+ * @param {string} id
+ * @param {ReturnType<typeof import('./graphql').endpoint>} endpoint
+ */
+export const queryWorkspace = async (id, endpoint) => {
+  const result = await endpoint.query(queries.workspace, { id });
+  if (!("data" in result)) {
+    throw Error("queryWorkspace: no data");
   }
-}
-`;
+  return result.data.workspace;
+};
 
 /** @param {Map<string, IssueInfo>} issueDetail */
 export const issueDepDot = (issueDetail) => {
@@ -127,4 +173,44 @@ export const issueDepDot = (issueDetail) => {
   digraph {
     ${dedup([...issueDetail.values()].flatMap(lines)).join("\n")}
   }`;
+};
+
+/**
+ * @param {string} workspaceId
+ * @param {IssueKey} issueKey
+ * @param {ReturnType<typeof import('./graphql').endpoint>} endpoint
+ */
+export const deepDependencies = async (workspaceId, issueKey, endpoint) => {
+  const done = [];
+  /** @type {Set<IssueKey>} */
+  const todo = new Set([issueKey]);
+  /** @type {Map<string, IssueInfo>} */
+  const updated = new Map();
+
+  for await (const current of todo) {
+    console.debug("transitive deps:", { current, done });
+    if (done.includes(issueUrl(current))) continue;
+    await endpoint
+      .query(queries.issue, {
+        workspaceId,
+        repositoryGhId: current.repository.ghId,
+        issueNumber: current.number,
+      })
+      .then((result) => {
+        console.log("issue query result:", result);
+        if ("data" in result) {
+          /** @type {{data: {issueByInfo: IssueInfo}}} */
+          const {
+            data: { issueByInfo },
+          } = result;
+          done.push(issueUrl(issueByInfo));
+          updated.set(issueUrl(issueByInfo), issueByInfo);
+          // issueByInfo.blockedIssues.nodes.forEach((i) => todo.add(i));
+          issueByInfo.blockingIssues.nodes.forEach((i) => todo.add(i));
+        } else {
+          console.warn("TODO: handle query failures?", result);
+        }
+      });
+  }
+  return updated;
 };

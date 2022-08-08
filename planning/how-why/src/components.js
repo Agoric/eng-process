@@ -4,6 +4,7 @@ import htm from "htm";
 
 import { issueUrl } from "./zenhubTools";
 
+/** @typedef {import('./zenhubTools').WorkspaceInfo} WorkspaceInfo */
 /** @typedef {import('./zenhubTools').IssueKey} IssueKey */
 /** @typedef {import('./zenhubTools').IssueInfo} IssueInfo */
 /** @typedef {import('./zenhubTools').IssueLeaf} IssueLeaf */
@@ -39,30 +40,16 @@ export const APIKey =
   };
 
 const repositorySelection = (repositories, issueKey) => {
-  if (!repositories.data) {
-    return html``;
+  if (!repositories.length) {
+    return html`<em>no repository info yet...</em>`;
   }
-
-  const {
-    data: {
-      viewer: {
-        searchWorkspaces: {
-          nodes: [
-            {
-              repositoriesConnection: { nodes },
-            },
-          ],
-        },
-      },
-    },
-  } = repositories;
 
   console.warn("TODO: make repo selectable");
   return html`<select disabled>
-    ${nodes.map(
+    ${repositories.map(
       (r) =>
         html`<option
-          ...${r.ghId === issueKey.repositoryGhId ? { selected: true } : {}}
+          ...${r.ghId === issueKey.repository.ghId ? { selected: true } : {}}
           value=${r.ghId}
         >
           ${r.ownerName}/${r.name}
@@ -71,14 +58,44 @@ const repositorySelection = (repositories, issueKey) => {
   </select>`;
 };
 
+const releaseSelection = (releases, releaseId, setReleaseId) => {
+  if (!releases.length) {
+    return html`<em>no release info yet...</em>`;
+  }
+
+  return html`<select onChange=${(ev) => setReleaseId(ev.target.value)}>
+    ${releases.map(
+      (r) => html`<option
+        ...${r.id === releaseId ? { selected: true } : {}}
+        value=${r.id}
+      >
+        ${r.endOn}: ${r.title}
+      </option>`
+    )}
+  </select>`;
+};
+
 /**
- * @param {IssueKey} issueKey
- * @param {(v: IssueKey) => void} setIssueKey
- * @param {Map<string, IssueInfo>} issueDetail
- * @param {unknown} repositories
+ * @param {Object} state
+ * @param {IssueKey | null} state.issueKey
+ * @param {(v: IssueKey) => void} state.setIssueKey
+ * @param {Map<string, IssueInfo>} state.issueDetail
+ * @param {WorkspaceInfo | null} state.workspace
+ * @param {string|null} state.releaseId
+ * @param {(id: string) => void} state.setReleaseId
  */
 export const Issue =
-  (issueKey, setIssueKey, issueDetail, repositories) => () => {
+  ({
+    issueKey,
+    setIssueKey,
+    issueDetail,
+    workspace,
+    releaseId,
+    setReleaseId,
+  }) =>
+  () => {
+    if (!(issueKey && workspace)) return html``;
+
     const issueByInfo = issueDetail.get(issueUrl(issueKey));
 
     const onSubmit = (ev) => {
@@ -87,7 +104,10 @@ export const Issue =
       ev.preventDefault();
     };
 
-    const repoControl = repositorySelection(repositories, issueKey);
+    const repoControl = repositorySelection(
+      workspace.repositoriesConnection.nodes,
+      issueKey
+    );
 
     const numControl = html`<label
       >#<input size="5" type="number" value="${issueKey.number}"
@@ -95,7 +115,14 @@ export const Issue =
 
     const form = (detail) => html`<h2>Issue Dependencies</h2>
       <form onSubmit=${onSubmit}>
-        <fieldset>${repoControl} ${numControl}${" "} ${detail}</fieldset>
+        <fieldset>
+          ${releaseSelection(
+            workspace.releases.nodes,
+            releaseId,
+            setReleaseId
+          )}<br />
+          ${repoControl} ${numControl}${" "} ${detail}
+        </fieldset>
       </form>`;
 
     if (!issueByInfo) {
