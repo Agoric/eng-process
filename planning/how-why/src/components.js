@@ -34,7 +34,16 @@ export const APIKey =
           ZenHub API Key:
           <input type="password" value=${apiKey} onInput=${onInput} />
         </label>
-        <button type="button" onClick=${onSubmit}>Save</button>
+        <button type="button" onClick=${onSubmit}>Save</button> <br />
+        <small>
+          <!-- anybody know how to get vs-code to stop eating significant whitespace? -->
+          <span>See </span>
+          <a
+            href="https://developers.zenhub.com/graphql-api-docs/getting-started"
+            >Getting Started</a
+          >
+          <span> if you need one.</span></small
+        >
       </fieldset>
     </form>`;
   };
