@@ -177,13 +177,13 @@ export const issueDepDot = (issueDetail) => {
 
 /**
  * @param {string} workspaceId
- * @param {IssueKey} issueKey
+ * @param {IssueKey[]} issueKeys
  * @param {ReturnType<typeof import('./graphql').endpoint>} endpoint
  */
-export const deepDependencies = async (workspaceId, issueKey, endpoint) => {
+export const deepDependencies = async (workspaceId, issueKeys, endpoint) => {
   const done = [];
   /** @type {Set<IssueKey>} */
-  const todo = new Set([issueKey]);
+  const todo = new Set(issueKeys);
   /** @type {Map<string, IssueInfo>} */
   const updated = new Map();
 

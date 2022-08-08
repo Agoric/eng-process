@@ -98,12 +98,16 @@ const App =
       const endpoint = graphql(ZenHub.endpoint, apiKey, { fetch });
 
       const runQuery = async () => {
-        if (!issueKey) return;
+        const releases = workspace?.releases?.nodes;
+        if (!releases) return;
         setReason(null);
+
+        const release = releases.find((r) => r.id === releaseId);
+        if (!release) return;
 
         const updated = await deepDependencies(
           Agoric.workspaceId,
-          issueKey,
+          release.issues.nodes,
           endpoint
         ).catch((r) => {
           setReason(r);
@@ -128,7 +132,7 @@ const App =
     return html`
       <div>
         <${APIKey(apiKey, setKey, {
-          storeItem: (value) => localStorage.set(key, value),
+          storeItem: (value) => localStorage.setItem(key, value),
         })} />
         ${reason
           ? html`<${Error(reason)} />`
