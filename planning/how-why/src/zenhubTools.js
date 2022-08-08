@@ -22,13 +22,9 @@ export const issueUrl = ({ repository: { ownerName, name }, number }) =>
  *   },
  *   number: number,
  * }} IssueKey
- * @typedef {IssueKey & {title: string}} IssueLeaf
+ * @typedef {IssueKey & {title: string, state: 'OPEN' | 'CLOSED'}} IssueLeaf
  *
- * @typedef {{
- *  state: 'OPEN' | 'CLOSED',
- *  number: number,
- *  title: string,
- *  repository: { ghId: number, ownerName: string, name: string },
+ * @typedef {IssueLeaf & {
  *  blockedIssues: { nodes: IssueLeaf[] },
  *  blockingIssues: { nodes: IssueLeaf[] },
  *  body: string,
@@ -49,6 +45,7 @@ query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
     blockedIssues {
       nodes {
         number
+        state
         title
         repository {
           ghId
@@ -60,6 +57,7 @@ query getIssueInfo($repositoryGhId: Int!, $issueNumber: Int!) {
     blockingIssues {
       nodes {
         number
+        state
         title
         repository {
           ghId
@@ -100,8 +98,10 @@ export const reposQuery = `
 /** @param {Map<string, IssueInfo>} issueDetail */
 export const issueDepDot = (issueDetail) => {
   /** @param {IssueLeaf} k */
-  const node = ({ number, title }) =>
-    ` issue${number} [label="#${number}", tooltip=${JSON.stringify(title)}]`;
+  const node = ({ number, state, title }) =>
+    ` issue${number} [label="#${number}", style=filled, fillcolor=${
+      state === "CLOSED" ? "green" : "red"
+    }, tooltip=${JSON.stringify(title)}]`;
 
   /** @type {(e: {tail: number, head: number}) => string} */
   const edge = ({ tail, head }) => `  issue${tail} -> issue${head}`;
