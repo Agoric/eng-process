@@ -4,12 +4,8 @@ import { useState, useEffect } from "preact/hooks";
 import htm from "htm";
 
 import { endpoint as graphql } from "./graphql";
-import {
-  ZenHub,
-  issueDepDot,
-  deepDependencies,
-  queryWorkspace,
-} from "./zenhubTools";
+import { ZenHub, deepDependencies, queryWorkspace } from "./zenhubTools";
+import { issueDepDot } from "./issueDiagram";
 import { APIKey, Error, Issue } from "./components";
 
 /** @template T @typedef {[T, import("preact/hooks").StateUpdater<T>]} StateT<T> */
