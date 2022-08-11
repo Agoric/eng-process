@@ -6,7 +6,7 @@ It _should_ be in support of some user story or bug fix.
 How are we going to do #545 "fly to moon"?  
 We break it down into parts.
 
-Dependency diagrams answer these _how_ and _why_ questions.
+Dependency diagrams can help answer these _how_ and _why_ questions.
 
 ## Getting Started
 
