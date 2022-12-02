@@ -95,7 +95,7 @@ class GenReport:
         print('\nVelocity by assignee')
         print(f"  Working days completed in this release: {working_days.days}")
         for assignee, issues in sorted(self.closed_issues_by_assignee.items(), key=lambda item: item[0]):
-            points_completed = sum([int(issue['estimate'] or 0) for issue in issues])
+            points_completed = sum([int(issue['estimate'] or self.default_issue_story_points) for issue in issues])
             points_per_day = points_completed / working_days.days
             days_of_work = (self.estimates_by_assignee.get(assignee, 0) / points_per_day) if points_completed else 0
             print(f"  {(assignee or 'unassigned') + ':':14s} {points_completed:2d} pts done -> "

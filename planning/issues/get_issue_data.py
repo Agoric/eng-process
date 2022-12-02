@@ -85,7 +85,7 @@ class GetData:
         # Associate the issue with teams, based on matching labels to teams in config file.
         for issue_label in issue_labels:
             team = self.labels_to_teams.get(issue_label, None)
-            if team and team not in owning_teams:
+            if team and (team[0] not in owning_teams):
                 owning_teams.append(team[0])
         # If there is no label that matches a team, then default to the assignee's team, if any.
         if not owning_teams and assignee:
@@ -168,3 +168,4 @@ if __name__ == '__main__':
         print(f'usage: {sys.argv[0]} config.yml ghkey zhkey release issues.csv rels.csv', file=sys.stderr)
         sys.exit(1)
     GetData().run()
+
