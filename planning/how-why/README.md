@@ -8,6 +8,8 @@ We break it down into parts.
 
 Dependency diagrams can help answer these _how_ and _why_ questions.
 
+![image](https://user-images.githubusercontent.com/150986/183335159-f0b77f55-19e3-4e1f-b1a8-84c58fbf37d6.png)
+
 ## Getting Started
 
 ```
@@ -16,6 +18,8 @@ yarn start
 ```
 
 ## Deployment
+
+_Note: deployed at https://agoric-eng-planning-1.netlify.app/_
 
 ```
 yarn build
